@@ -19,7 +19,7 @@ from aiogram.types import FSInputFile
 from dotenv import load_dotenv
 
 from image_handling import get_ai_image_description
-from exporters import export_as_zip
+from export_utils import callbacks_router
 from middleware import AlbumMiddleware
 
 load_dotenv()
@@ -40,8 +40,7 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 lang = {}
 
 
-async def export_menu(message: Message, user: User):
-    # Проверка: если этот чат сейчас что-то обрабатывает
+async def export_menu(message: Message):
     if busy_tasks.get(message.chat.id, 0) > 0:
         await message.answer(lang['busy_export_denied'])
         return
@@ -60,12 +59,12 @@ async def export_menu(message: Message, user: User):
 
 @router.message(Command('export'))
 async def export_cmd(message: Message):
-    await export_menu(message, message.from_user)
+    await export_menu(message)
 
 
 @router.callback_query(F.data == 'open_export_menu')
 async def callback_open_export_menu(callback: CallbackQuery):
-    await export_menu(callback.message, callback.from_user)
+    await export_menu(callback.message)
     await callback.answer()
 
 
@@ -123,10 +122,10 @@ async def command_start_handler(message: Message):
 
 async def main():
     dp.message.middleware(AlbumMiddleware())
-
     bot = Bot(token=TELEGRAM_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
     dp.include_router(router)
+    dp.include_router(callbacks_router)
 
     with open('system_prompt.txt', 'r', encoding='utf-8') as file:
         global SYSTEM_PROMPT
@@ -136,40 +135,7 @@ async def main():
         global lang
         lang = json.load(file)
 
-    await dp.start_polling(bot)
-
-
-@router.callback_query(F.data == 'export_as_zip')
-async def callback_export_as_zip(callback: CallbackQuery):
-    with tempfile.TemporaryDirectory() as tempdir:
-        export_as_zip(text_buffer[callback.message.chat.id], callback.message.chat.id, tempdir)
-
-        text_buffer[callback.message.chat.id].clear()
-
-        document = FSInputFile(os.path.join(tempdir, 'result.zip'))
-
-        await callback.message.answer_document(
-            document,
-            caption=lang['exported_zip']
-        )
-
-
-@router.callback_query(F.data == 'export_as_json')
-async def callback_export_as_json(callback: CallbackQuery):
-    file_name = f'texts_{callback.message.chat.id}.json'
-
-    with open(file_name, 'w', encoding='utf-8') as file:
-        json.dump(text_buffer.setdefault(callback.message.chat.id, []), file, ensure_ascii=False, indent=4)
-
-    document = FSInputFile(file_name)
-
-    await callback.message.answer_document(
-        document,
-        caption=lang['exported_json']
-    )
-
-    if os.path.exists(file_name):
-        os.remove(file_name)
+    await dp.start_polling(bot, lang=lang, text_buffer=text_buffer)
 
 
 if __name__ == '__main__':
