@@ -1,9 +1,7 @@
 import asyncio
 import json
 import logging
-import os.path
 import sys
-import tempfile
 from os import getenv
 
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -13,8 +11,7 @@ from aiogram import Bot, Dispatcher, html, Router, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, InlineKeyboardButton, CallbackQuery, User
-from aiogram.types import FSInputFile
+from aiogram.types import Message, InlineKeyboardButton, CallbackQuery
 
 from dotenv import load_dotenv
 
