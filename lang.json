@@ -16,5 +16,5 @@
   "error_file_not_found": "❌ Файл не найден",
   "error_bad_file": "❌ Файл пуст или имеет неверную структуру",
   "error_parsing_file": "❌ Ошибка парсинга файла",
-  "text_is_too_long_suffix": "\\n\\n...[Текст обрезан]..."
+  "text_is_too_long_suffix": "\n\n...[Текст обрезан]..."
 }
